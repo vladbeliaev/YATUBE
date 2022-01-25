@@ -89,9 +89,8 @@ def profile(request, username):
     post_list = profile.posts.all()
     following = False
     page_obj = paginator_method(request, post_list)
-    if request.user.is_authenticated:
-        if profile.following.filter(user=request.user).exists():
-            following = True
+    if request.user.is_authenticated and profile.following.filter(user=request.user).exists():
+        following = True
     context = {
         'profile': profile,
         'page_obj': page_obj,
@@ -130,12 +129,7 @@ def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     if author == request.user:
         return redirect('posts:profile', username)
-    follow = author.following.filter(user=request.user).exists()
-    if follow is False:
-        follow = Follow.objects.create(
-            user=request.user,
-            author=author
-        )
+    Follow.objects.get_or_create(user=request.user, author=author)
     return redirect('posts:profile', author.username)
 
 
@@ -143,10 +137,8 @@ def profile_follow(request, username):
 def profile_unfollow(request, username):
     # Дизлайк, отписка
     author = get_object_or_404(User, username=username)
-    follow = author.following.filter(user=request.user).exists()
-    if follow is True:
-        Follow.objects.filter(
-            user=request.user,
-            author=author
-        ).delete()
+    Follow.objects.filter(
+        user=request.user,
+        author=author
+    ).delete()
     return redirect('posts:profile', username)

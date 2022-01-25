@@ -224,39 +224,83 @@ class PostViewsTests(TestCase):
         response = self.guest_client.get(reverse('posts:index'))
         self.assertNotContains(response, new_post.text)
 
-    def test_auth_user_can_follow_and_unfollow_authors(self):
-        """Авторизованный пользователь может подписываться на
-        других пользователей и удалять их из подписок."""
+
+class FollowViewsTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='auth')
+        cls.group = Group.objects.create(
+            title='Тестовая группа',
+            slug='Test-slug',
+            description='Тестовое описание',
+        )
+        cls.post = Post.objects.create(
+            author=cls.user,
+            text='Тестовый текст',
+            group=cls.group,
+        )
+
+    def setUp(self):
+        self.guest_client = Client()
+        self.user = User.objects.create_user(username='HasNoName')
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+        self.author = FollowViewsTests.user
+        self.authorized_client_author = Client()
+        self.authorized_client_author.force_login(self.author)
+        cache.clear()
+
+
+    def test_auth_user_can_follow(self):
+        """Авторизованный пользователь может подписываться на других пользователей"""
         post = Post.objects.create(
-            author=PostViewsTests.user,
+            author=FollowViewsTests.user,
             text='new post  for test follow',
         )
-        follow = Follow.objects.create(
+        Follow.objects.create(
             user=self.user,
-            author=PostViewsTests.user
+            author=FollowViewsTests.user
         )
         response = self.authorized_client.get(reverse('posts:follow_index'))
         post_context = response.context.get('page_obj')
         self.assertIn(post, post_context)
+
+    def test_auth_user_can_unfollow_authors(self):
+        """Авторизованный пользователь может удалять других пользователей из подписок"""
+        post = Post.objects.create(
+            author=FollowViewsTests.user,
+            text='new post  for test unfollow',
+        )
+        follow = Follow.objects.create(
+            user=self.user,
+            author=FollowViewsTests.user
+        )
         follow.delete()
         response = self.authorized_client.get(reverse('posts:follow_index'))
         post_context = response.context.get('page_obj')
         self.assertNotIn(post, post_context)
 
     def test_new_post_on_folowers_lent(self):
-        """Новая запись пользователя появляется в ленте тех,
-        кто на него подписан и не появляется в ленте тех, кто не подписан."""
+        """Новая запись пользователя появляется в ленте тех, кто на него подписан"""
         post = Post.objects.create(
-            author=PostViewsTests.user,
+            author=FollowViewsTests.user,
             text='new post  for test follow',
         )
         Follow.objects.create(
             user=self.user,
-            author=PostViewsTests.user
+            author=FollowViewsTests.user
         )
         response = self.authorized_client.get(reverse('posts:follow_index'))
         post_context = response.context.get('page_obj')
         self.assertIn(post, post_context)
+    
+    def test_new_post_on_no_folowers_lent(self):
+        """Новая запись пользователя не появляется в ленте тех, кто не подписан."""
+        post = Post.objects.create(
+            author=FollowViewsTests.user,
+            text='new post  for test follow',
+        )
         self.new_user = User.objects.create_user(username='NewHasNoName')
         self.new_authorized_client = Client()
         self.new_authorized_client.force_login(self.new_user)
@@ -269,6 +313,27 @@ class PostViewsTests(TestCase):
         )
         post_context = response.context.get('page_obj')
         self.assertNotIn(post, post_context)
+
+    def test_profile_follow_view(self):
+        """При подписке происходит redirect на профайл автора"""
+        author = FollowViewsTests.user
+        response = self.authorized_client.get(
+            reverse('posts:profile_follow', args=(author,))
+        )
+        self.assertRedirects(response, reverse('posts:profile', args=(author.username,)))
+
+    def test_profile_unfollow_view(self):
+        """При подписке происходит redirect на профайл автора"""
+        author = FollowViewsTests.user
+        Follow.objects.create(
+            user=self.user,
+            author=author
+        )
+        response = self.authorized_client.get(
+            reverse('posts:profile_unfollow', args=(author,))
+        )
+        self.assertRedirects(response, reverse('posts:profile', args=(author.username,)))
+
 
 
 class PaginatorViewsTests(TestCase):

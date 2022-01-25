@@ -3,7 +3,7 @@ from http import HTTPStatus
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
-from ..models import Group, Post
+from ..models import Follow, Group, Post
 
 User = get_user_model()
 
@@ -22,6 +22,7 @@ class PostURLTests(TestCase):
             author=cls.user,
             text='Тестовая группа',
         )
+
 
     def setUp(self):
         self.guest_client = Client()
@@ -50,6 +51,7 @@ class PostURLTests(TestCase):
         """URL-адрес использует соответствующий шаблон post_edit"""
         templates_url_names = {
             '/create/': 'posts/create_post.html',
+            '/follow/': 'posts/follow.html',
         }
         for address, template in templates_url_names.items():
             with self.subTest(address=address, template=template):
