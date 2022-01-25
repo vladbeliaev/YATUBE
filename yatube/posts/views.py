@@ -89,7 +89,9 @@ def profile(request, username):
     post_list = profile.posts.all()
     following = False
     page_obj = paginator_method(request, post_list)
-    if request.user.is_authenticated and profile.following.filter(user=request.user).exists():
+    if request.user.is_authenticated and profile.following.filter(
+        user=request.user
+    ).exists():
         following = True
     context = {
         'profile': profile,

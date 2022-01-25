@@ -3,7 +3,7 @@ from http import HTTPStatus
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
-from ..models import Follow, Group, Post
+from ..models import Group, Post
 
 User = get_user_model()
 
@@ -22,7 +22,6 @@ class PostURLTests(TestCase):
             author=cls.user,
             text='Тестовая группа',
         )
-
 
     def setUp(self):
         self.guest_client = Client()
