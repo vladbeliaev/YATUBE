@@ -87,12 +87,10 @@ def group_posts(request, slug):
 def profile(request, username):
     profile = get_object_or_404(User, username=username)
     post_list = profile.posts.all()
-    following = False
-    page_obj = paginator_method(request, post_list)
-    if request.user.is_authenticated and profile.following.filter(
+    following = request.user.is_authenticated and profile.following.filter(
         user=request.user
-    ).exists():
-        following = True
+    ).exists()
+    page_obj = paginator_method(request, post_list)
     context = {
         'profile': profile,
         'page_obj': page_obj,

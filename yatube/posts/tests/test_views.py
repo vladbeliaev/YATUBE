@@ -254,33 +254,32 @@ class FollowViewsTests(TestCase):
     def test_auth_user_can_follow(self):
         """Авторизованный пользователь может подписываться на
         других пользователей"""
-        post = Post.objects.create(
-            author=FollowViewsTests.user,
-            text='new post  for test follow',
-        )
+        follow_count = Follow.objects.count()
         Follow.objects.create(
             user=self.user,
             author=FollowViewsTests.user
         )
-        response = self.authorized_client.get(reverse('posts:follow_index'))
-        post_context = response.context.get('page_obj')
-        self.assertIn(post, post_context)
+        follow_count_after = Follow.objects.count()
+        self.assertEqual(follow_count + 1, follow_count_after)
+        self.assertTrue(Follow.objects.filter(
+            user=self.user,
+            author=FollowViewsTests.user
+        ).exists())
 
     def test_auth_user_can_unfollow_authors(self):
         """Авторизованный пользователь может удалять других
         пользователей из подписок"""
-        post = Post.objects.create(
-            author=FollowViewsTests.user,
-            text='new post  for test unfollow',
-        )
-        follow = Follow.objects.create(
+        Follow.objects.create(
             user=self.user,
             author=FollowViewsTests.user
         )
-        follow.delete()
-        response = self.authorized_client.get(reverse('posts:follow_index'))
-        post_context = response.context.get('page_obj')
-        self.assertNotIn(post, post_context)
+        follow_count = Follow.objects.count()
+        Follow.objects.filter(
+            user=self.user,
+            author=FollowViewsTests.user
+        ).delete()
+        follow_count_after = Follow.objects.count()
+        self.assertEqual(follow_count - 1, follow_count_after)
 
     def test_new_post_on_folowers_lent(self):
         """Новая запись пользователя появляется в ленте тех,
