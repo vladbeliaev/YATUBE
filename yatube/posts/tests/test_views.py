@@ -255,31 +255,34 @@ class FollowViewsTests(TestCase):
         """Авторизованный пользователь может подписываться на
         других пользователей"""
         follow_count = Follow.objects.count()
-        Follow.objects.create(
-            user=self.user,
-            author=FollowViewsTests.user
+        author = FollowViewsTests.user
+        self.authorized_client.get(
+            reverse('posts:profile_follow', args=(author,))
         )
         follow_count_after = Follow.objects.count()
         self.assertEqual(follow_count + 1, follow_count_after)
         self.assertTrue(Follow.objects.filter(
             user=self.user,
-            author=FollowViewsTests.user
+            author=author
         ).exists())
 
     def test_auth_user_can_unfollow_authors(self):
         """Авторизованный пользователь может удалять других
         пользователей из подписок"""
-        Follow.objects.create(
-            user=self.user,
-            author=FollowViewsTests.user
+        author = FollowViewsTests.user
+        self.authorized_client.get(
+            reverse('posts:profile_follow', args=(author,))
         )
         follow_count = Follow.objects.count()
-        Follow.objects.filter(
-            user=self.user,
-            author=FollowViewsTests.user
-        ).delete()
+        self.authorized_client.get(
+            reverse('posts:profile_unfollow', args=(author,))
+        )
         follow_count_after = Follow.objects.count()
         self.assertEqual(follow_count - 1, follow_count_after)
+        self.assertFalse(Follow.objects.filter(
+            user=self.user,
+            author=author
+        ).exists())
 
     def test_new_post_on_folowers_lent(self):
         """Новая запись пользователя появляется в ленте тех,
@@ -327,7 +330,7 @@ class FollowViewsTests(TestCase):
         )
 
     def test_profile_unfollow_view(self):
-        """При подписке происходит redirect на профайл автора"""
+        """При отписке происходит redirect на профайл автора"""
         author = FollowViewsTests.user
         Follow.objects.create(
             user=self.user,
